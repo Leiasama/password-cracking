@@ -3,6 +3,7 @@ import sys
 from time import sleep
 import requests
 
+
 class Cracker():
     def __init__(self, url, file, login, submit, params_names, fail_phrase):
         self.submit = submit
@@ -35,7 +36,7 @@ class Cracker():
 
             # Send data to server
             for index, single_data in enumerate(self.data):
-                print(f"[ {index+1}/{len(self.passes)} ] Sending ", single_data, "for", self.url)
+                print(f"[ {index + 1}/{len(self.passes)} ] Sending ", single_data, "for", self.url)
                 if self.send(self.url, single_data, self.fail):
                     print("Password found!")
                     print("Login:", self.login)
@@ -44,7 +45,6 @@ class Cracker():
         else:
             print("File could not be found!")
             sys.exit()
-
 
     def read_data(self, filename):
         with open(filename, 'r') as f:
@@ -59,6 +59,7 @@ class Cracker():
         else:
             return True
 
+
 try:
     URL = sys.argv[1]
     PASS = sys.argv[2]
@@ -68,4 +69,5 @@ try:
     FAIL = sys.argv[6]
     cracker = Cracker(URL, PASS, LOGIN, BUTTON_VALUE, (PARAMS_NAMES[0], PARAMS_NAMES[1], PARAMS_NAMES[2]), FAIL)
 except IndexError:
-    print("Usage: python script.py <url> <path_to_file_with_passes> <login> <submit_button_value> <post_of_login/username?password?submit_button, separeted with '?' <fail_phrase>")
+    print(
+        "Usage: python script.py <url> <path_to_file_with_passes> <login> <submit_button_value> <post_of_login/username?password?submit_button, separeted with '?' <fail_phrase>")
